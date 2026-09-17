@@ -162,15 +162,20 @@ app.get('/login', (req, res) => {
 });
 
 app.post('/login', async (req, res) => {
-  const { username, password } = req.body;
-  const { rows } = await pool.query('SELECT * FROM users WHERE username = $1', [username]);
-  const user = rows[0];
+  try {
+    const { username, password } = req.body;
+    const { rows } = await pool.query('SELECT * FROM users WHERE username = $1', [username]);
+    const user = rows[0];
 
-  if (user && bcrypt.compareSync(password, user.password)) {
-    req.session.userId = user.id;
-    return res.redirect('/');
+    if (user && bcrypt.compareSync(password, user.password)) {
+      req.session.userId = user.id;
+      return res.redirect('/');
+    }
+    res.send('Invalid credentials. <a href="/login">Try again</a>');
+  } catch (err) {
+    console.error('Database query error on login:', err);
+    res.status(500).send('Database connection error. Please check your DATABASE_URL in Render.');
   }
-  res.send('Invalid credentials. <a href="/login">Try again</a>');
 });
 
 app.get('/change-password', requireAuth, (req, res) => {
